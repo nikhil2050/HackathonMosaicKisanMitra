@@ -2,8 +2,8 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 
-#define MAX 100
-#define CAPACITY 300
+#define MAX 1000
+#define CAPACITY 1000
 char bufForH[MAX]; 
 char bufForT[MAX];
 char bufForHI[MAX]; 
@@ -58,15 +58,13 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Create a random client ID
-    String clientId = "ESP8266Client-";
+//    String clientId = "ESP8266Client-";
+    String clientId = "lens_SBV3NRCHepVEhWcxwczx9cUyTgy";
+    
     clientId += String(random(0xffff), HEX);
     // Attempt to connect
     if (client.connect(clientId.c_str())) {
       Serial.println("connected");
-      // Once connected, publish an announcement...
-      client.publish("farmSensor1", "hello humidity");
-      client.publish("farmSensor2", "hello temperature");  
-      client.publish("farmSensor3", "hello heat index"); 
       // ... and resubscribe
       client.subscribe("inTopic");
     } else {
@@ -102,6 +100,7 @@ void setup() {
 void loop() {
     delay(2000);
     if (!client.connected()) {
+      Serial.print("MQTT not connected. Reconnecting...");    
       reconnect();
     }
     client.loop();
@@ -135,28 +134,51 @@ void loop() {
     Serial.print(sensorRecord.humidity);
     Serial.print("\n");
 
+    String jsonStr = String("[");
     StaticJsonDocument<CAPACITY> doc;
     JsonArray sensorArray = doc.to<JsonArray>();
-    
     for(int i=0; i<3; i++) {
+      jsonStr = String(jsonStr + "{\"edgeId\":\"edge1\",\"sensorId\":\"");
       StaticJsonDocument<CAPACITY> doc2;
       JsonObject sensor = doc2.to<JsonObject>();
-      sensor["edgeId"] = "e1";
-      sensor["sensorId"] = "moisture1";       // Use case
-      sensor["sensorType"] = "0";
+      sensor["edgeId"] = "edge1";
       switch(i) {
         case 0:
+          jsonStr = String(jsonStr + "0\",\"sensorType\":\"0\",\"sensorValue\":\"");
+          sensor["sensorId"] = "0";
+          sensor["sensorType"] = "0";
+          break;
+        case 1:
+          jsonStr = String(jsonStr + "1\",\"sensorType\":\"1\",\"sensorValue\":\"");
+          sensor["sensorId"] = "1";
+          sensor["sensorType"] = "1";
+          break;
+        case 2:
+          jsonStr = String(jsonStr + "2\",\"sensorType\":\"2\",\"sensorValue\":\"");
+          sensor["sensorId"] = "2";
+          sensor["sensorType"] = "2";
+          break;
+      }
+      switch(i) {
+        case 0:
+          jsonStr = String(jsonStr + sensorRecord.moisture +"\"}");
           sensor["sensorValue"] = sensorRecord.moisture;
           break;
         case 1:
+          jsonStr = String(jsonStr + sensorRecord.temprature +"\"}");
           sensor["sensorValue"] = sensorRecord.temprature;
           break;
         case 2:
+          jsonStr = String(jsonStr + sensorRecord.humidity +"\"}");
           sensor["sensorValue"] = sensorRecord.humidity;
           break;
       }
+      if(i!=2) {
+          jsonStr = String(jsonStr + ",");
+      }
       sensorArray.add(sensor);
     }
+    jsonStr = String(jsonStr + "]");
     serializeJson(doc, Serial);    
 /*  int lenghtSimple = JSONencoder.measureLength();
     Serial.print("Less overhead JSON message size: ");  Serial.println(lenghtSimple);
@@ -170,11 +192,17 @@ void loop() {
     //MQTT Topic is Kafka_Topic 
 //    client.publish("Kafka_Topic",doc.as<String>());
 //    client.publish("Kafka_Topic",doc.as<Character>());
-    char buffer[512];
+    char buffer[1024];
     size_t n = serializeJson(doc, buffer);
-    client.publish("Kafka_Topic2", buffer, n);
     
-    Serial.println("\n");
+//    Serial.print("\njsonStr : ");
+//    Serial.println((char*) jsonStr.c_str());
+    delay(2000);
+//    client.publish("Kafka_Topic2", buffer, 1024);
+    client.publish("Kafka_Topic2", (char*) jsonStr.c_str());
+    
+//    Serial.print(n);
+    Serial.println("\nPublished.\n");
     delay(2000);
     Serial.println("—————");
           
