@@ -1,0 +1,20 @@
+zookeeper-server-start.bat ..\..\config\zookeeper.properties
+kafka-server-start.bat ..\..\config\server.properties
+
+bin\windows\kafka-topics.bat --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic Kafka_Topic
+bin\windows\kafka-console-producer.bat --broker-list localhost:9092 --topic Kafka_Topic
+bin\windows\kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic Kafka_Topic --property print.key=true --from-beginning
+
+bin\windows\kafka-topics.bat — zookeeper localhost:2181 — delete — topic Kafka_Topic2
+
+Kafka on EC2 : 
+(https://medium.com/@maftabali2k13/setting-up-a-kafka-cluster-on-ec2-1b37144cb4e)
+bin/zookeeper-server-start.sh -daemon config/zookeeper.properties
+
+bin/kafka-server-start.sh -daemon config/server.properties
+
+Java8 on EC2:
+(https://dzone.com/articles/installing-java-8-on-aws-ec2-amazon-linux-instance)
+
+https://tecadmin.net/install-apache-kafka-ubuntu/
+
